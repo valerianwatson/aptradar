@@ -50,9 +50,7 @@ var writeAWS = function (apartments) {
     }
     }).promise()   
 }
-/*for (const i in sitelist) {
-  let extractor = sitelist[i][0];
-  console.log(sitelist[i][1]);*/
+
   var firstApts = [];
   var lastApts = [];
   async function appendApts (array=[], a=[], i){
