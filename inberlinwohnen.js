@@ -24,7 +24,7 @@ function extractListingsFromHTML_2 (html) {
     //closing = moment(closing.slice(0, closing.indexOf('-') - 1), 'DD/MM/YYYY').toISOString();
 
    // apts.push({closing, job, location});
-    apts.push({size, rooms, price, district, address, balcony});
+    apts.push({size, rooms, price, district, address});
    
 
   });

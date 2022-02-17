@@ -23,12 +23,36 @@ const dynamo = new AWS.DynamoDB.DocumentClient();
 const { differenceWith, isEqual } = require('lodash');
 const { extractListingsFromHTML_1 } = require('./helpers');
 const { extractListingsFromHTML_2 } = require('./inberlinwohnen');
+var nodemailer = require('nodemailer'); 
 
 //const sitelist = {[extractListingsFromHTML_1]: 'https://www.mueller-merkle.de/angebote/?stadt=Berlin&zimmer=&wohnflaeche=0&preis_max=&objekttyp=&etage=&balkon_terrasse=&einbaukueche=#estates', 
   //                [extractListingsFromHTML_2]: 'https://inberlinwohnen.de/wohnungsfinder/'};
 const sitelist = [[extractListingsFromHTML_1, 'https://www.mueller-merkle.de/angebote/?stadt=Berlin&zimmer=&wohnflaeche=0&preis_max=&objekttyp=&etage=&balkon_terrasse=&einbaukueche=#estates'], 
                 [extractListingsFromHTML_2, 'https://inberlinwohnen.de/wohnungsfinder/'] ];
 
+var transporter = nodemailer.createTransport({
+  service: 'outlook',
+  auth: {
+    user: 'apartmentradar@outlook.de',
+    pass: 'FritzisFuechse!'
+  }
+});
+
+var mailOptions = {
+  from: 'apartmentradar@outlook.de',
+  to: 'v.watson@hotmail.de',
+  subject: 'Sending Email using Node.js',
+  text: 'That was easy!'
+};
+/*
+transporter.sendMail(mailOptions, function(error, info){
+  if (error) {
+    console.log(error);
+  } else {
+    console.log('Email sent: ' + info.response);
+  }
+}); 
+*/
 
 async function pairArrays (x=[], y=[]){
   x = [...x,...y];
@@ -62,29 +86,17 @@ var writeAWS = function (apartments) {
      }
      if(i==array.length-1){
         firstApts =[...firstApts,...a];  
-       //await pairArrays(firstApts, a)
-       /* console.log('this is firstApts: ',firstApts);
-        dynamo.put({
-          TableName: 'aptradar',
-          Item: {
-            listingId: new Date().toString(),
-            apts: firstApts
-          }
-          }).promise() */  
      }
      else{
       firstApts =[...firstApts,...a]; 
-      //await pairArrays(firstApts, a);
      }
-      //console.log(firstApts);
-      
      return newApts = firstApts;
    }
 
   module.exports.getaptradar = async function (event, context) {
-   
     let allApts;
     let newApts = [];
+    var todayApts;
     //let firstApts;
     let p1 = new Promise (function(resolve, reject) {
       for (const i in sitelist){
@@ -93,12 +105,39 @@ var writeAWS = function (apartments) {
           .then(({data}) => {
             allApts = extractor(data);
            newApts = appendApts(sitelist, allApts, i)
-           console.log('this is newApts: ',newApts);
+           //console.log('this is newApts: ',newApts);
            return lastApts = newApts;
-          }).then(()=>{
-           
-            console.log('this is firstApts: ',lastApts);
+          })
+          .then(()=>{
+           // console.log('this is firstApts: ',lastApts);
             if(i==sitelist.length-1){
+
+             let oldApts= dynamo.scan({
+                TableName: 'aptradar'
+              }).promise();
+              oldApts.then(response => {
+               // console.log(allApts);
+                // Figure out which jobs are new
+                //console.log('response: ', response);
+                let yesterdaysJobs = response.Items[0] ? response.Items[0].apts : [];
+                console.log('the old apartments are: ', yesterdaysJobs);
+                todayApts= differenceWith(firstApts, yesterdaysJobs, isEqual);
+                console.log('the new apartments are: ', todayApts);
+                // Get the ID of yesterday's jobs which can now be deleted
+                const jobsToDelete = response.Items[0] ? response.Items[0].listingId : null;
+          
+                // Delete old jobs
+                
+                if (jobsToDelete) {
+                  return dynamo.delete({
+                    TableName: 'aptradar',
+                    Key: {
+                      listingId: jobsToDelete
+                    }
+                  }).promise();
+                } else return; 
+              })
+              .then(() => {
               return dynamo.put({
                 TableName: 'aptradar',
                 Item: {
@@ -106,163 +145,12 @@ var writeAWS = function (apartments) {
                   apts: firstApts
                 }
                 }).promise()
+              });
             }
           })
       }
     })
-    
-        
-  
-    
-  
-
-/*
-    console.log('this is firstApts: ',firstApts);
-    return dynamo.put({
-      TableName: 'aptradar',
-      Item: {
-        listingId: new Date().toString(),
-        apts: firstApts
-      }
-      }).promise()*/
-
   }
- /*
-  
-  module.exports.getaptradar = (event, context, callback) => {
-    let newApts, allApts
-
-    let firstApts;
-    for (const i in sitelist){
-      
-      let extractor = sitelist[i][0];
-    
-    request(sitelist[i][1])
-    //request('https://www.mueller-merkle.de/angebote/?stadt=Berlin&zimmer=&wohnflaeche=0&preis_max=&objekttyp=&etage=&balkon_terrasse=&einbaukueche=#estates')
-      .then(({data}) => {
-        allApts = extractor(data);
-       
-      }) 
-      .then(() => {
-        if(i==0){
-          firstApts = allApts;
-        }
-        if(i==sitelist.length-1){
-          firstApts =[...firstApts,...allApts];
-        }
-        else{
-          firstApts =[...firstApts,...allApts];
-        }
-         console.log(allApts);  //Es werden von beiden websites die apartments über sonsole log in der console ausgegeben, aber sie landen nicht in der Datenbank
-       
-      })
-      .then(() => {
-        callback(null, { apts: firstApts }); //egal ob hier apts: allApts oder nur allApts steht
-      })
-      .catch(callback);
-    } 
-    return dynamo.put({
-      TableName: 'aptradar',
-      Item: {
-        listingId: new Date().toString(),
-        apts: firstApts
-      }
-    }).promise();
-  };
-
-
-*/
-
-
-
-
-/*
-
-
-  module.exports.getaptradar = (event, context, callback) => {
-    let newApts, allApts;
-
-    for (const i in sitelist){
-      let extractor = sitelist[i][0];
-    
-    request(sitelist[i][1])
-    //request('https://www.mueller-merkle.de/angebote/?stadt=Berlin&zimmer=&wohnflaeche=0&preis_max=&objekttyp=&etage=&balkon_terrasse=&einbaukueche=#estates')
-      .then(({data}) => {
-        allApts = extractor(data);
-        return dynamo.scan({
-          TableName: 'aptradar'
-        }).promise();
-      }) 
-      .then(response => {
-        console.log(allApts);
-        // Figure out which jobs are new
-        let yesterdaysJobs = response.Items[0] ? response.Items[0].apts : [];
-  
-        newApts= differenceWith(allApts, yesterdaysJobs, isEqual);
-  
-        // Get the ID of yesterday's jobs which can now be deleted
-        const jobsToDelete = response.Items[0] ? response.Items[0].listingId : null;
-  
-        // Delete old jobs
-        
-        if (jobsToDelete) {
-          return dynamo.delete({
-            TableName: 'aptradar',
-            Key: {
-              listingId: jobsToDelete
-            }
-          }).promise();
-        } else return; 
-      }) 
-      .then(() => {
-       
-        // Save the list of today's jobs
-        return dynamo.put({
-          TableName: 'aptradar',
-          Item: {
-            listingId: new Date().toString(),
-            apts: allApts
-          }
-        }).promise();
-      })
-      .then(() => {
-        callback(null, { apts: newApts });
-      })
-      .catch(callback);
-    }
-  };
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
