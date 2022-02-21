@@ -153,17 +153,32 @@ var writeAWS = function (apartments) {
        }
     })
     p1.then(()=>{
+      const mailApts = [];
       for(const i in todayApts){
         console.log('this is item', i, 'from todays apartments: ', todayApts[i])
         if(parseFloat(todayApts[i].rooms) >= 2.5 && parseFloat(todayApts[i].size) >=60 && parseFloat(todayApts[i].price) <= 1300){
+         if(i=0){
+           mailApts = todayApts[i]
+         }
+         else{
+           mailApts = [...mailApts,...todayApts[i]]
+         } 
           
-          var mailOptions = {
-            from: 'apartmentradar@outlook.de',
-            to: 'v.watson@hotmail.de',
-            subject: 'Sending Email using Node.js',
-            text: 'That was easy!'
-          };
         }
+        var mailOptions = {
+          from: 'apartmentradar@outlook.de',
+          to: 'v.watson@hotmail.de',
+          subject: 'Es gibt neue Wohnungen!',
+          text: mailApts
+        };
+        
+        transporter.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
+          } else {
+            console.log('Email sent: ' + info.response);
+          }
+        }); 
       }
     })
   }
