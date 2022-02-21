@@ -16,6 +16,7 @@ function extractListingsFromHTML_2 (html) {
     let price = $(el).find('._tb_left').children().last().text().trim();
     let district = $(el).find('._tb_left').text().split(" ").pop();
     let address = $(el).find('._tb_left').text().split(" | ").pop();
+    let link = '';
     let balcony;
     
   

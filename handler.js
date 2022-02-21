@@ -37,14 +37,14 @@ var transporter = nodemailer.createTransport({
     pass: 'FritzisFuechse!'
   }
 });
-
+/*
 var mailOptions = {
   from: 'apartmentradar@outlook.de',
   to: 'v.watson@hotmail.de',
   subject: 'Sending Email using Node.js',
   text: 'That was easy!'
 };
-/*
+
 transporter.sendMail(mailOptions, function(error, info){
   if (error) {
     console.log(error);
@@ -120,9 +120,11 @@ var writeAWS = function (apartments) {
                 // Figure out which jobs are new
                 //console.log('response: ', response);
                 let yesterdaysJobs = response.Items[0] ? response.Items[0].apts : [];
-                console.log('the old apartments are: ', yesterdaysJobs);
+                
                 todayApts= differenceWith(firstApts, yesterdaysJobs, isEqual);
                 console.log('the new apartments are: ', todayApts);
+                //Send Mail with newest apartments
+
                 // Get the ID of yesterday's jobs which can now be deleted
                 const jobsToDelete = response.Items[0] ? response.Items[0].listingId : null;
           
@@ -144,16 +146,54 @@ var writeAWS = function (apartments) {
                   listingId: new Date().toString(),
                   apts: firstApts
                 }
-                }).promise()
+                }).promise();  
               });
             }
           })
+       }
+    })
+    p1.then(()=>{
+      for(const i in todayApts){
+        console.log('this is item', i, 'from todays apartments: ', todayApts[i])
+        if(parseFloat(todayApts[i].rooms) >= 2.5 && parseFloat(todayApts[i].size) >=60 && parseFloat(todayApts[i].price) <= 1300){
+          
+          var mailOptions = {
+            from: 'apartmentradar@outlook.de',
+            to: 'v.watson@hotmail.de',
+            subject: 'Sending Email using Node.js',
+            text: 'That was easy!'
+          };
+        }
       }
     })
   }
+/*
+  module.exports.getcorrectapts = async function (event, context) {
+   
+      for(const i in response){
+        if(response.Items[i].Rooms >= 2.5 && response.Items[i].Size >=60 && response.Items[i].price <= 1300){
+          
+          var mailOptions = {
+            from: 'apartmentradar@outlook.de',
+            to: 'v.watson@hotmail.de',
+            subject: 'Sending Email using Node.js',
+            text: 'That was easy!'
+          };
 
 
+          transporter.sendMail(mailOptions, function(error, info){
+            if (error) {
+              console.log(error);
+            } else {
+              console.log('Email sent: ' + info.response);
+            }
+          }); 
 
+        }
+      }
+    })
+  }
+*/
 
 
 /*

@@ -11,6 +11,8 @@ provider:
 functions:
   getaptradar:
     handler: handler.getaptradar
+  getcorrectapts: 
+    handler: handler.getcorrectapts
 
 resources:
   Resources:
