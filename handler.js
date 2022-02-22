@@ -184,7 +184,7 @@ var writeAWS = function (apartments) {
         }
         else {continue}
       }
-      const mailinput = mailApts.toString();
+      const mailinput = JSON.stringify(mailApts); //mailApts.toString();
       console.log('mailinput: ', mailApts);
       var mailOptions = {
         from: 'apartmentradar@outlook.de',
